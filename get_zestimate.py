@@ -19,9 +19,10 @@ my zws_id: X1-ZWz1a6057c0y6j_2rqd6
 
 def get_zpid(params_dict):
     '''
-    :param: zwsid: Zillow web service id
-    :param: address: address (e.g. '2114+Bigelow+Ave')
-    :param: citystatezip: city+state ('Seattle%2C+WA') AND/OR zip code
+    :param: params_dict: dictionary with parameters for the GetSearchResults API call (zws-id, address, citystatezip)
+    zwsid: Zillow web service id
+    address: street address (e.g. '2114 Bigelow Ave')
+    citystatezip: 'Seattle WA' AND/OR zip code
     :return: zpid for the property address
     '''
     #sample call = 'http://www.zillow.com/webservice/GetSearchResults.htm?zws-id=<ZWSID>&address=2114+Bigelow+Ave&citystatezip=Seattle%2C+WA'
@@ -36,42 +37,37 @@ def get_zpid(params_dict):
 
 def get_zestimate(params_dict):
     '''
-    :param: zwsid: Zillow web service id
-    :param zpid: Zillow property id for an address
-    :return: zestimate for that property
+    :param: params_dict: dictionary with parameters for GetZestimate API call (zws-id, zpid)
+    zws-id: Zillow web service id
+    zpid: Zillow property id for an address
+    :return: dictionary containing price formatted as currency and as an ordinary string (e.g., '123456')
     '''
+    price_dict = {}
     url = 'http://www.zillow.com/webservice/GetZestimate.htm'
     data = requests.get(url, params=params_dict)
     root = ET.fromstring(data.text)
     locale.setlocale(locale.LC_ALL, 'en_US')
     for amount_el in root.iter('amount'):
-        return locale.currency(int(amount_el.text), grouping=True)
+        price_dict['zestimate'] = amount_el.text
+        price_dict['zestimate_currency'] = locale.currency(int(amount_el.text), grouping=True)
+        return price_dict
 
-def get_monthly_mortgage_pmt(zwsid, price, down=20, dollarsdown=None, zip=None):
+def get_monthly_mortgage_pmt(params_dict):
     '''
-    :param: zwsid: Zillow web service id
-    :param: price: property price
-    :param: down: down payment percentage - if omitted, 20% assumed
-    :param: dollarsdown: dollar amount that will be used as down payment (use in place of down)
-    :param: zip: zip code in which property located - if used, estimated monthly insurance/tax data will be returned
+    :param: params_dict: dictionary containing parameters for GetMonthlyPayments API call url
+    zws-id: Zillow web service id
+    price: property price
+    down: down payment percentage - if omitted, 20% assumed
+    dollarsdown: dollar amount that will be used as down payment (use in place of down)
+    zip: zip code in which property located - if used, estimated monthly insurance/tax data will be returned
     :return: dictionary containing: estimated monthly mortgage pmt for that property, and optionally:
             estimated monthly insurance/tax payments
     '''
     #sample call: http://www.zillow.com/webservice/GetMonthlyPayments.htm?zws-id=<ZWSID>&price=300000&down=15&zip=98104
-    data_dict_to_return = {}
-    if zip != None:
-        zip_string = '&zip={0}'.format(zip)
-    else:
-        zip_string = ''
-    price_list = price.strip('$').strip('.00').split(',')
-    price_str = price_list[0] + price_list[1]
-    url = 'http://www.zillow.com/webservice/GetMonthlyPayments.htm?zws-id={0}&output=json&price={1}'.format(zwsid, price_str)
-    if dollarsdown != None:
-        url = url + '&dollarsdown={0}{1}'.format(dollarsdown, zip_string)
-    else:
-        url = url + '&down={0}{1}'.format(down, zip_string)
-    data = requests.get(url).text
-    data = json.loads(data)
+    #data_dict_to_return = {} for now, returning json object and not using this
+    url = 'http://www.zillow.com/webservice/GetMonthlyPayments.htm'
+    data = requests.get(url, params=params_dict)
+    data = json.loads(data.text)
     #print json.dumps(data, sort_keys=True, indent=4)
     return data
 
@@ -82,9 +78,12 @@ def main():
     url_params_dict = {'zws-id': zwsid, 'address': '93 Hillside Ave', 'citystatezip': 'Metuchen NJ 08840'}
     test_zpid = get_zpid(url_params_dict)
     url_params_dict['zpid'] = test_zpid
-    test_zestimate = get_zestimate(url_params_dict)
-    print 'Zestimate:', test_zestimate
-    monthly_housing_exp_data = get_monthly_mortgage_pmt(zwsid, test_zestimate, zip='08840')
+    test_zestimate_dict = get_zestimate(url_params_dict)
+    print 'Zestimate:', test_zestimate_dict['zestimate_currency']
+    url_params_dict['price'] = test_zestimate_dict['zestimate']
+    url_params_dict['zip'] = '08840'
+    url_params_dict['down']= '20'
+    monthly_housing_exp_data = get_monthly_mortgage_pmt(url_params_dict)
     monthly_pmt_fifteen_fixed = monthly_housing_exp_data['response']['fifteenYearFixed']['monthlyPrincipalAndInterest']
     monthly_pmt_thirty_fixed = monthly_housing_exp_data['response']['thirtyYearFixed']['monthlyPrincipalAndInterest']
     down_pmt_fifteen_fixed = monthly_housing_exp_data['response']['downPayment']
