@@ -29,8 +29,6 @@ def get_zpid(zwsid, address, citystatezip):
     params_dict = {'zws-id': zwsid, 'address': address, 'citystatezip': citystatezip}
     url = 'http://www.zillow.com/webservice/GetSearchResults.htm'
     data = requests.get(url, params=params_dict)
-    #print data.url
-    #print data.text
     root = ET.fromstring(data.text)
     for zpid_el in root.iter('zpid'):
         return zpid_el.text
@@ -44,11 +42,9 @@ def get_zestimate(zwsid, zpid):
     :return: dictionary containing price formatted as currency and as an ordinary string (e.g., '123456')
     '''
     price_dict = {}
-    #print zpid
     params_dict = {'zws-id': zwsid, 'zpid': zpid}
     url = 'http://www.zillow.com/webservice/GetZestimate.htm'
     data = requests.get(url, params=params_dict)
-    #print data.url
     root = ET.fromstring(data.text)
     locale.setlocale(locale.LC_ALL, 'en_US')
     for amount_el in root.iter('amount'):
@@ -68,7 +64,6 @@ def get_monthly_mortgage_pmt(zwsid, price, down=20, dollarsdown=None, zip=None):
             estimated monthly insurance/tax payments
     '''
     #sample call: http://www.zillow.com/webservice/GetMonthlyPayments.htm?zws-id=<ZWSID>&price=300000&down=15&zip=98104
-    #data_dict_to_return = {} for now, returning json object and not using this
     params_dict = {'zws-id': zwsid, 'price': price, 'zip': zip, 'output': 'json'}
     if dollarsdown != None:
         params_dict['dollarsdown'] = dollarsdown
@@ -77,7 +72,6 @@ def get_monthly_mortgage_pmt(zwsid, price, down=20, dollarsdown=None, zip=None):
     url = 'http://www.zillow.com/webservice/GetMonthlyPayments.htm'
     data = requests.get(url, params=params_dict)
     data = json.loads(data.text)
-    #print json.dumps(data, sort_keys=True, indent=4)
     return data
 
 def format_as_currency(num_as_text):
