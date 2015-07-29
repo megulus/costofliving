@@ -82,6 +82,7 @@ def main():
     test_zpid = get_zpid(zwsid, '93 Hillside Ave', 'Metuchen NJ')
     test_zestimate_dict = get_zestimate(zwsid, test_zpid)
     print 'Zestimate:', test_zestimate_dict['zestimate_currency']
+    # QUESTION: should I write little helper functions to handle the following?
     monthly_housing_exp_data = get_monthly_mortgage_pmt(zwsid, test_zestimate_dict['zestimate'], down=20, zip='08840')
     monthly_pmt_fifteen_fixed = monthly_housing_exp_data['response']['fifteenYearFixed']['monthlyPrincipalAndInterest']
     monthly_pmt_thirty_fixed = monthly_housing_exp_data['response']['thirtyYearFixed']['monthlyPrincipalAndInterest']
