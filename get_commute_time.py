@@ -2,6 +2,8 @@
 
 import requests
 import json
+import arrow
+
 
 gmap_api_key = 'AIzaSyBwp2FaIFGQyGZfMJvXVngGUYGSHGf2mIM'
 
@@ -22,9 +24,20 @@ def get_driving_time(origin, destination, avoid=None, departure_time='now', arri
     return data
 
 
+def get_rush_hour_departure_time():
+    '''
+    assumes rush hour departure means a weekday morning
+    :return:
+    '''
+    now = arrow.utcnow()
+    day_of_week = now.weekday()
+    locale_instance = arrow.locales.get_locale('en_us')
+
+
+
 def main():
     test_driving_results = get_driving_time('209 4th St Jersey City NJ', '86 Chambers St New York NY')
-    # QUESTION: for departure_time, is there some easy way to translate human time to the integer that this API can understand?
+    # again, should I ultimately aim to have helper functions that do the following json parsing?
     driving_time = test_driving_results['rows'][0]['elements'][0]['duration']['text']
     origin = test_driving_results['origin_addresses'][0]
     destination = test_driving_results['destination_addresses'][0]
